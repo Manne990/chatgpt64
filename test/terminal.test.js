@@ -1,0 +1,40 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import {
+  C64,
+  formatBlock,
+  formatClearScreen,
+  formatPrompt,
+  normalizeTerminalMode,
+} from "../src/terminal.js";
+
+test("normalizeTerminalMode accepts common C64 aliases", () => {
+  assert.equal(normalizeTerminalMode("petscii"), "c64");
+  assert.equal(normalizeTerminalMode("commodore"), "c64");
+  assert.equal(normalizeTerminalMode("ansi"), "ascii");
+});
+
+test("formatBlock keeps ASCII mode plain", () => {
+  assert.equal(
+    formatBlock("Hello färg", { asciiOnly: true, terminal: "ascii", width: 40 }),
+    "Hello farg\r\n",
+  );
+});
+
+test("formatBlock emits C64 color control bytes in C64 mode", () => {
+  const output = formatBlock("Hello C64", { terminal: "c64", width: 40 }, "assistant");
+
+  assert.equal(Buffer.isBuffer(output), true);
+  assert.equal(output[0], C64.LIGHT_GREEN);
+  assert.equal(output.subarray(1, -1).toString("ascii"), "Hello C64\r\n");
+  assert.equal(output.at(-1), C64.WHITE);
+});
+
+test("formatPrompt colors the C64 prompt and resets input to white", () => {
+  assert.deepEqual([...formatPrompt({ terminal: "c64" })], [C64.CYAN, 62, 32, C64.WHITE]);
+});
+
+test("formatClearScreen emits C64 clear-screen control byte", () => {
+  assert.deepEqual([...formatClearScreen({ terminal: "c64" })], [C64.CLEAR, C64.WHITE]);
+});
+

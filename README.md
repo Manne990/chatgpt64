@@ -29,7 +29,7 @@ Du skriver en rad i CCGMS, servern skickar fragan till OpenAI och svaret kommer 
 - OpenAI API-nyckeln ska aldrig finnas pa C64:an, bara pa servern.
 - Servern ska prata med OpenAI Responses API.
 - Servern ska halla en enkel session per uppkoppling.
-- Svar ska vara korta, textbaserade och C64-vanliga.
+- Svar ska vara korta, textbaserade och C64-vanliga eftersom terminalen inte har scrollback.
 - Utdata ska radbrytas for 40 kolumner som standard.
 - ASCII-safe lage ska vara standard, med enkel translitterering av svenska tecken.
 - C128/80-kolumnslage ska kunna anvanda bredare radbredd via miljovariabel.
@@ -44,11 +44,13 @@ Forsta kodpasset innehaller:
 - enkel telnet-IAC-filtrering
 - fjarr-echo for terminalprogram som vill ha BBS-kansla
 - prompt och radbuffer
-- `/help`, `/new`, `/short`, `/normal`, `/long`, `/model`, `/quit`
+- `/help`, `/new`, `/short`, `/normal`, `/long`, `/c64`, `/ascii`, `/cls`, `/model`, `/quit`
 - OpenAI Responses API-anrop via `fetch`
 - `previous_response_id` per anslutning for fortsatt konversation
+- kort svarslage som standard
 - 40-kolumns radbrytning
 - ASCII-translitterering
+- valbart C64-farglage med PETSCII/control bytes
 
 ## Krav
 
@@ -127,11 +129,53 @@ Deploy-anvandaren pa servern behover kunna kora `sudo install` och `sudo systemc
 ```text
 /help    visa hjalp
 /new     starta ny ChatGPT-session
-/short   be om kortare svar
-/normal  standardlage
+/short   korta svar, standardlage
+/normal  lite fylligare svar
 /long    tillat langre svar
+/c64     C64-farglage
+/ascii   plain ASCII-lage
+/cls     rensa skarmen
 /model   visa aktiv modell
 /quit    koppla ner
+```
+
+## C64-farger
+
+ASCII-lage ar standard for maximal kompatibilitet. I C64-lage skickar servern Commodore control bytes for farg och clear screen, men haller vanlig text ASCII-saker eftersom den vagen redan fungerar bra med CCGMS/tcpser.
+
+Starta C64-farglage i en session:
+
+```text
+/c64
+```
+
+Ga tillbaka till plain ASCII:
+
+```text
+/ascii
+```
+
+Rensa skarmen:
+
+```text
+/cls
+```
+
+For att starta alla anslutningar i C64-farglage, satt detta i serverns `.env`:
+
+```text
+CHATGPT64_TERMINAL=c64
+```
+
+Fargerna anvands sa har:
+
+```text
+cyan       prompt/banner
+yellow     THINKING... och varningar
+light blue system- och hjalptext
+light red  fel
+light green ChatGPT-svar
+white      inmatning/reset
 ```
 
 ## Konfiguration
@@ -142,6 +186,7 @@ OPENAI_MODEL            standard: gpt-5.5
 CHATGPT64_HOST          standard: 0.0.0.0
 CHATGPT64_PORT          standard: 6464
 CHATGPT64_WIDTH         standard: 40
+CHATGPT64_TERMINAL      standard: ascii, kan vara c64
 CHATGPT64_MAX_INPUT     standard: 1200
 CHATGPT64_ASCII_ONLY    standard: 1
 CHATGPT64_ECHO          standard: 1

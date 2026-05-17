@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { extractOutputText } from "../src/openai.js";
+import { buildInstructions, extractOutputText } from "../src/openai.js";
 import { toTerminalText, wrapText } from "../src/format.js";
 
 test("wrapText wraps words to the configured width", () => {
@@ -36,3 +36,8 @@ test("extractOutputText handles Responses API output items", () => {
   );
 });
 
+test("buildInstructions defaults to C64-friendly short answers", () => {
+  const instructions = buildInstructions();
+  assert.match(instructions, /ingen scrollback/);
+  assert.match(instructions, /max 8 korta rader/);
+});

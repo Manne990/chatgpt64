@@ -6,7 +6,7 @@ export class OpenAIChat {
     this.model = model;
   }
 
-  async reply({ input, previousResponseId, mode = "normal", signal }) {
+  async reply({ input, previousResponseId, mode = "short", signal }) {
     if (!this.apiKey) {
       throw new Error("OPENAI_API_KEY saknas pa servern.");
     }
@@ -46,18 +46,20 @@ export class OpenAIChat {
   }
 }
 
-function buildInstructions(mode) {
+export function buildInstructions(mode) {
   const lengthHint = {
-    short: "Svara mycket kort, helst under 6 rader.",
-    normal: "Svara koncist men anvandbart.",
-    long: "Du far ge ett langre svar nar det hjalper.",
-  }[mode] || "Svara koncist men anvandbart.";
+    short: "Svara mycket kort: helst 3-6 rader, max 8 korta rader. Om mer behovs, fraga om anvandaren vill ha mer.",
+    normal: "Svara koncist: max 10-12 korta rader om inte anvandaren uttryckligen ber om mer.",
+    long: "Du far ge ett langre svar, men hall det fortfarande terminalvanligt.",
+  }[mode] || "Svara mycket kort: helst 3-6 rader, max 8 korta rader.";
 
   return [
     "Du ar ChatGPT/64, en assistent som pratar med en C64 eller C128 via terminal.",
+    "Terminalen har ingen scrollback, sa langa svar forsvinner fran skarmen.",
     "Svara pa svenska om anvandaren skriver svenska.",
     "Anvand enkel plain text utan markdown-tabeller.",
     "Undvik Unicode-symboler, emoji och typografiska citattecken.",
+    "Undvik utfyllnad, upprepning och langa introduktioner.",
     "Hall rader och stycken terminalvanliga.",
     lengthHint,
   ].join(" ");
@@ -79,4 +81,3 @@ export function extractOutputText(data) {
 
   return parts.join("\n").trim() || "(tomt svar)";
 }
-

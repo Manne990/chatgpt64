@@ -26,6 +26,48 @@ test("TerminalSession treats CRLF as one submitted line", () => {
   assert.equal(socket.ended, true);
 });
 
+test("TerminalSession starts in short mode", () => {
+  const socket = new FakeSocket();
+  const session = new TerminalSession({
+    socket,
+    chat: {},
+    config: {
+      apiKey: "test",
+      asciiOnly: true,
+      charDelayMs: 0,
+      echo: true,
+      maxInput: 1200,
+      model: "test-model",
+      width: 40,
+    },
+  });
+
+  assert.equal(session.mode, "short");
+});
+
+test("TerminalSession can switch to C64 color mode", () => {
+  const socket = new FakeSocket();
+  const session = new TerminalSession({
+    socket,
+    chat: {},
+    config: {
+      apiKey: "test",
+      asciiOnly: true,
+      charDelayMs: 0,
+      echo: true,
+      maxInput: 1200,
+      model: "test-model",
+      terminal: "ascii",
+      width: 40,
+    },
+  });
+
+  session.receive(Buffer.from("/c64\r\n", "ascii"));
+
+  assert.equal(session.terminal, "c64");
+  assert.equal(socket.output.some((chunk) => Buffer.isBuffer(chunk)), true);
+});
+
 class FakeSocket {
   constructor() {
     this.output = [];
@@ -34,7 +76,7 @@ class FakeSocket {
   }
 
   write(value) {
-    this.output.push(String(value));
+    this.output.push(value);
   }
 
   end() {
@@ -45,4 +87,3 @@ class FakeSocket {
 function count(value, needle) {
   return value.split(needle).length - 1;
 }
-

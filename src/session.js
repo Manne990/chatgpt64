@@ -1,7 +1,12 @@
-import { crlf, toTerminalText, wrapText } from "./format.js";
+import {
+  formatBlock,
+  formatClearScreen,
+  formatPrompt,
+  formatReset,
+  normalizeTerminalMode,
+} from "./terminal.js";
 
 const BACKSPACE = "\b \b";
-const PROMPT = "> ";
 
 export class TerminalSession {
   constructor({ socket, chat, config }) {
@@ -9,7 +14,8 @@ export class TerminalSession {
     this.chat = chat;
     this.config = config;
     this.line = "";
-    this.mode = "normal";
+    this.mode = "short";
+    this.terminal = normalizeTerminalMode(config.terminal);
     this.previousResponseId = "";
     this.busy = false;
     this.telnetSkip = 0;
@@ -19,12 +25,12 @@ export class TerminalSession {
   start() {
     this.writeBlock([
       "CHATGPT/64 READY.",
-      "TYPE /HELP FOR COMMANDS.",
+      "SHORT MODE. /HELP FOR COMMANDS.",
       "",
-    ].join("\n"));
+    ].join("\n"), "banner");
 
     if (!this.config.apiKey) {
-      this.writeBlock("OBS: OPENAI_API_KEY SAKNAS PA SERVERN.");
+      this.writeBlock("OBS: OPENAI_API_KEY SAKNAS PA SERVERN.", "error");
     }
 
     this.prompt();
@@ -81,7 +87,7 @@ export class TerminalSession {
 
     this.line += char;
     if (this.config.echo) {
-      this.socket.write(char);
+      this.writeRaw(char);
     }
   }
 
@@ -92,14 +98,14 @@ export class TerminalSession {
 
     this.line = this.line.slice(0, -1);
     if (this.config.echo) {
-      this.socket.write(BACKSPACE);
+      this.writeRaw(BACKSPACE);
     }
   }
 
   submitLine() {
     const input = this.line.trim();
     this.line = "";
-    this.socket.write("\r\n");
+    this.writeRaw("\r\n");
 
     if (!input) {
       this.prompt();
@@ -132,34 +138,56 @@ export class TerminalSession {
           "/SHORT  SHORT ANSWERS",
           "/NORMAL NORMAL ANSWERS",
           "/LONG   LONGER ANSWERS",
+          "/C64    C64 COLOR MODE",
+          "/ASCII  PLAIN ASCII MODE",
+          "/CLS    CLEAR SCREEN",
           "/MODEL  SHOW MODEL",
           "/QUIT   DISCONNECT",
-        ].join("\n"));
+        ].join("\n"), "help");
         this.prompt();
         break;
       case "/new":
         this.previousResponseId = "";
-        this.writeBlock("NEW SESSION.");
+        this.writeBlock("NEW SESSION.", "system");
         this.prompt();
         break;
       case "/short":
       case "/normal":
       case "/long":
         this.mode = command.slice(1);
-        this.writeBlock(`MODE: ${this.mode.toUpperCase()}`);
+        this.writeBlock(`MODE: ${this.mode.toUpperCase()}`, "system");
+        this.prompt();
+        break;
+      case "/c64":
+      case "/color":
+      case "/petscii":
+        this.terminal = "c64";
+        this.writeBlock("C64 COLOR MODE.", "system");
+        this.prompt();
+        break;
+      case "/ascii":
+      case "/mono":
+        this.writeRaw(formatReset({ terminal: this.terminal }));
+        this.terminal = "ascii";
+        this.writeBlock("ASCII MODE.", "system");
+        this.prompt();
+        break;
+      case "/cls":
+      case "/clear":
+        this.writeRaw(formatClearScreen({ terminal: this.terminal }));
         this.prompt();
         break;
       case "/model":
-        this.writeBlock(`MODEL: ${this.config.model}`);
+        this.writeBlock(`MODEL: ${this.config.model}`, "system");
         this.prompt();
         break;
       case "/quit":
       case "/bye":
-        this.writeBlock("BYE.");
+        this.writeBlock("BYE.", "system");
         this.socket.end();
         break;
       default:
-        this.writeBlock("UNKNOWN COMMAND. TRY /HELP.");
+        this.writeBlock("UNKNOWN COMMAND. TRY /HELP.", "warning");
         this.prompt();
         break;
     }
@@ -167,7 +195,7 @@ export class TerminalSession {
 
   async ask(input) {
     this.busy = true;
-    this.writeBlock("THINKING...");
+    this.writeBlock("THINKING...", "thinking");
 
     try {
       const response = await this.chat.reply({
@@ -177,9 +205,9 @@ export class TerminalSession {
       });
 
       this.previousResponseId = response.id || this.previousResponseId;
-      this.writeBlock(response.text);
+      this.writeBlock(response.text, "assistant");
     } catch (error) {
-      this.writeBlock(`ERROR: ${error.message}`);
+      this.writeBlock(`ERROR: ${error.message}`, "error");
     } finally {
       this.busy = false;
       this.prompt();
@@ -187,30 +215,39 @@ export class TerminalSession {
   }
 
   prompt() {
-    this.socket.write(PROMPT);
+    this.writeRaw(formatPrompt({ terminal: this.terminal }));
   }
 
-  writeBlock(value) {
-    const text = toTerminalText(value, { asciiOnly: this.config.asciiOnly });
-    const wrapped = wrapText(text, this.config.width);
-    this.writeSlow(`${wrapped}\r\n`);
+  writeBlock(value, style = "assistant") {
+    this.writeSlow(formatBlock(value, {
+      ...this.config,
+      terminal: this.terminal,
+    }, style));
   }
 
-  writeSlow(value) {
-    const text = crlf(value);
-    if (this.config.charDelayMs <= 0) {
-      this.socket.write(text);
+  writeRaw(value) {
+    if (value === "") {
       return;
     }
 
+    this.socket.write(value);
+  }
+
+  writeSlow(value) {
+    if (this.config.charDelayMs <= 0) {
+      this.writeRaw(value);
+      return;
+    }
+
+    const bytes = Buffer.isBuffer(value) ? value : Buffer.from(String(value), "utf8");
     let index = 0;
     const timer = setInterval(() => {
-      if (index >= text.length || this.socket.destroyed) {
+      if (index >= bytes.length || this.socket.destroyed) {
         clearInterval(timer);
         return;
       }
 
-      this.socket.write(text[index]);
+      this.socket.write(bytes.subarray(index, index + 1));
       index += 1;
     }, this.config.charDelayMs);
   }

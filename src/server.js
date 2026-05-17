@@ -33,8 +33,8 @@ server.on("error", (error) => {
 server.listen(config.port, config.host, () => {
   console.log(`chatgpt64 listening on ${config.host}:${config.port}`);
   console.log(`model: ${config.model}`);
+  console.log(`terminal: ${config.terminal}, width: ${config.width}`);
   if (!config.apiKey) {
     console.log("warning: OPENAI_API_KEY is not set; chat requests will fail");
   }
 });
-
