@@ -1,0 +1,81 @@
+name: Deploy chatgpt64
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    branches:
+      - main
+    types:
+      - completed
+  workflow_dispatch:
+
+concurrency:
+  group: chatgpt64-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    env:
+      SSH_HOST: ${{ secrets.CHATGPT64_SSH_HOST }}
+      SSH_USER: ${{ secrets.CHATGPT64_SSH_USER }}
+      SSH_PORT: ${{ secrets.CHATGPT64_SSH_PORT || '22' }}
+      APP_DIR: ${{ secrets.CHATGPT64_APP_DIR }}
+      SERVICE_NAME: chatgpt64.service
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Validate deployment secrets
+        run: |
+          test -n "$SSH_HOST"
+          test -n "$SSH_USER"
+          test -n "$APP_DIR"
+          test -n "${{ secrets.CHATGPT64_SSH_KEY }}"
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.CHATGPT64_SSH_KEY }}" > ~/.ssh/chatgpt64_deploy
+          chmod 600 ~/.ssh/chatgpt64_deploy
+          ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: Sync application files
+        run: |
+          ssh -i ~/.ssh/chatgpt64_deploy -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "mkdir -p '$APP_DIR'"
+          rsync -az --delete \
+            --exclude '.git/' \
+            --exclude '.env' \
+            --exclude 'node_modules/' \
+            --exclude 'npm-debug.log*' \
+            -e "ssh -i ~/.ssh/chatgpt64_deploy -p $SSH_PORT" \
+            ./ "$SSH_USER@$SSH_HOST:$APP_DIR/"
+
+      - name: Install runtime and restart service
+        run: |
+          ssh -i ~/.ssh/chatgpt64_deploy -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" \
+            "APP_DIR='$APP_DIR' SERVICE_NAME='$SERVICE_NAME' RUN_USER='$SSH_USER' bash -s" <<'REMOTE'
+          set -euo pipefail
+          cd "$APP_DIR"
+          if ! command -v node >/dev/null 2>&1; then
+            echo "node is not installed on the target server" >&2
+            exit 1
+          fi
+          if command -v npm >/dev/null 2>&1; then
+            npm ci --omit=dev
+          fi
+          if [ ! -f "$APP_DIR/.env" ]; then
+            install -m 0600 "$APP_DIR/.env.example" "$APP_DIR/.env"
+          fi
+          sudo install -m 0644 deploy/systemd/chatgpt64.service "/etc/systemd/system/$SERVICE_NAME"
+          sudo sed -i "s#__APP_DIR__#$APP_DIR#g" "/etc/systemd/system/$SERVICE_NAME"
+          sudo sed -i "s#__RUN_USER__#$RUN_USER#g" "/etc/systemd/system/$SERVICE_NAME"
+          sudo systemctl daemon-reload
+          sudo systemctl enable "$SERVICE_NAME"
+          sudo systemctl restart "$SERVICE_NAME"
+          sudo systemctl --no-pager --lines=30 status "$SERVICE_NAME"
+          REMOTE

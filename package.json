@@ -1,0 +1,16 @@
+{
+  "name": "chatgpt64",
+  "version": "0.1.0",
+  "description": "A C64/C128 terminal bridge from CCGMS to ChatGPT through the OpenAI API.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
+

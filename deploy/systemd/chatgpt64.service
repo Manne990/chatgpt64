@@ -1,0 +1,22 @@
+[Unit]
+Description=chatgpt64 C64/C128 ChatGPT terminal bridge
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__RUN_USER__
+Group=__RUN_USER__
+WorkingDirectory=__APP_DIR__
+Environment=NODE_ENV=production
+EnvironmentFile=-__APP_DIR__/.env
+ExecStart=/usr/bin/env node src/server.js
+Restart=always
+RestartSec=10
+
+# Keep OPENAI_API_KEY in __APP_DIR__/.env on the server.
+# The deploy workflow intentionally preserves that file.
+
+[Install]
+WantedBy=multi-user.target
+
