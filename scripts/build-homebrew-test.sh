@@ -38,10 +38,11 @@ class Chatgpt64 < Formula
         chatgpt64 setup
         chatgpt64 start
         chatgpt64 tcpser
+        chatgpt64 vice
 
       Your OpenAI API key is stored locally in your user config directory.
       Retro clients connect to the local bridge, not directly to OpenAI.
-      Install tcpser separately if you use CCGMS/VICE modem emulation.
+      Install tcpser and VICE separately if you use CCGMS/VICE modem emulation.
     EOS
   end
 

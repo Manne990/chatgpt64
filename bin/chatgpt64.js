@@ -8,6 +8,7 @@ import { startBridge } from "../src/bridge.js";
 import { defaultConfigFile, loadEnvFile, resolveEnvFile, writeEnvFile } from "../src/env.js";
 import { buildTcpserArgs, commandLine, findExecutable, installHint, resolveTcpserOptions, runTcpser } from "../src/tcpser.js";
 import { normalizeTerminalMode } from "../src/terminal.js";
+import { buildViceArgs, commandLine as viceCommandLine, findViceExecutable, resolveViceOptions, runVice, viceInstallHint } from "../src/vice.js";
 
 const args = parseArgs(process.argv.slice(2));
 const command = args._[0] || "start";
@@ -23,6 +24,8 @@ try {
     runDoctor(args);
   } else if (command === "tcpser") {
     await runTcpserCommand(args);
+  } else if (command === "vice") {
+    await runViceCommand(args);
   } else {
     console.error(`Unknown command: ${command}`);
     printHelp();
@@ -90,6 +93,8 @@ function runDoctor(args) {
   const config = readConfig();
   const tcpserOptions = resolveTcpserOptions(args);
   const tcpserPath = findExecutable(tcpserOptions.tcpserBin);
+  const viceOptions = resolveViceOptions(args);
+  const vicePath = findViceExecutable(viceOptions.viceBin);
 
   console.log("chatgpt64 doctor");
   console.log(`node: ${process.version}`);
@@ -99,6 +104,8 @@ function runDoctor(args) {
   console.log(`terminal: ${config.terminal}, width: ${config.width}`);
   console.log(`tcpser: ${tcpserPath || "missing"}`);
   console.log(`tcpser command: ${commandLine(tcpserOptions.tcpserBin, buildTcpserArgs(tcpserOptions))}`);
+  console.log(`vice: ${vicePath || "missing"}`);
+  console.log(`vice command: ${viceCommandLine(viceOptions.viceBin, buildViceArgs(viceOptions))}`);
   printConnectHints(config);
 }
 
@@ -126,6 +133,39 @@ async function runTcpserCommand(args) {
     child.once("exit", (code, signal) => {
       if (signal) {
         console.error(`tcpser stopped by ${signal}`);
+        process.exitCode = 1;
+      } else {
+        process.exitCode = code ?? 0;
+      }
+      resolve();
+    });
+  });
+}
+
+async function runViceCommand(args) {
+  const options = resolveViceOptions(args);
+  const vicePath = findViceExecutable(options.viceBin);
+
+  if (!vicePath) {
+    console.error(viceInstallHint());
+    process.exitCode = 1;
+    return;
+  }
+
+  const resolvedOptions = { ...options, viceBin: vicePath };
+  console.log(`starting: ${viceCommandLine(resolvedOptions.viceBin, buildViceArgs(resolvedOptions))}`);
+  console.log(`VICE RS232 target: ${resolvedOptions.host}:${resolvedOptions.listen}`);
+  const child = runVice(resolvedOptions);
+
+  await new Promise((resolve) => {
+    child.once("error", (error) => {
+      console.error(`VICE failed: ${error.message}`);
+      process.exitCode = 1;
+      resolve();
+    });
+    child.once("exit", (code, signal) => {
+      if (signal) {
+        console.error(`VICE stopped by ${signal}`);
         process.exitCode = 1;
       } else {
         process.exitCode = code ?? 0;
@@ -222,12 +262,14 @@ Usage:
   chatgpt64 setup [--env path]
   chatgpt64 start [--env path] [--host 0.0.0.0] [--port 6464] [--terminal ascii|c64] [--width 40]
   chatgpt64 tcpser [--listen 25232] [--dial 6464] [--target 127.0.0.1:6464]
+  chatgpt64 vice [--listen 25232] [--vice-bin path] [--keymap path]
   chatgpt64 doctor [--env path]
 
 Commands:
   setup   Create a local bridge configuration file.
   start   Start the raw TCP bridge.
   tcpser  Start tcpser for VICE/CCGMS modem emulation.
+  vice    Start VICE with RS232 settings for tcpser.
   doctor  Show configuration and connection hints.
 
 The OpenAI API key stays on this machine in the bridge configuration.

@@ -32,6 +32,7 @@ The OpenAI API key stays on the computer running `chatgpt64`. It is never stored
 - Optional C64 color mode using Commodore control bytes
 - PETSCII-inspired startup banner with colored reverse-video blocks
 - `tcpser` helper for VICE/CCGMS modem emulation
+- `vice` helper for launching VICE with the matching RS232 settings
 
 ## Requirements
 
@@ -76,6 +77,12 @@ Start the modem emulator in another terminal:
 chatgpt64 tcpser
 ```
 
+Start VICE in a third terminal:
+
+```sh
+chatgpt64 vice
+```
+
 The default chain is:
 
 ```text
@@ -95,12 +102,19 @@ brew tap rickard-von-essen/formulae
 brew install tcpser
 ```
 
+If you use a custom keyboard map:
+
+```sh
+chatgpt64 vice --keymap ~/Documents/sdl_sym_se.vkm
+```
+
 ## CLI
 
 ```sh
 chatgpt64 setup
 chatgpt64 start
 chatgpt64 tcpser
+chatgpt64 vice
 chatgpt64 doctor
 ```
 
@@ -124,9 +138,11 @@ Common flags:
 chatgpt64 start --terminal c64 --width 40 --port 6464
 chatgpt64 start --terminal ascii --width 80 --port 6464
 chatgpt64 tcpser --listen 25232 --dial 6464 --target 127.0.0.1:6464
+chatgpt64 vice --listen 25232 --keymap ~/Documents/sdl_sym_se.vkm
 ```
 
 `chatgpt64 start` runs the OpenAI bridge. `chatgpt64 tcpser` starts modem emulation for clients that talk through AT commands.
+`chatgpt64 vice` starts VICE with RS232/IP232 settings that point at `chatgpt64 tcpser`.
 
 ## Homebrew
 
@@ -155,6 +171,8 @@ brew tap <owner>/chatgpt64
 brew install chatgpt64
 chatgpt64 setup
 chatgpt64 start
+chatgpt64 tcpser
+chatgpt64 vice
 ```
 
 More packaging notes are in `docs/packaging.md`.
@@ -235,6 +253,9 @@ CHATGPT64_MAX_INPUT     default: 1200
 CHATGPT64_ASCII_ONLY    default: 1
 CHATGPT64_ECHO          default: 1
 CHATGPT64_CHAR_DELAY_MS default: 0
+CHATGPT64_VICE_BIN       default: x64sc
+CHATGPT64_VICE_LISTEN    default: 25232
+CHATGPT64_VICE_KEYMAP    optional keymap path
 ```
 
 `CHATGPT64_ASCII_ONLY=1` transliterates accented source text to plain ASCII. It is less pretty, but safer for early retro terminal testing.

@@ -7,6 +7,7 @@ chatgpt64 setup
 chatgpt64 start
 chatgpt64 doctor
 chatgpt64 tcpser
+chatgpt64 vice
 ```
 
 The bridge reads configuration from:
@@ -37,6 +38,7 @@ It is intentionally not a hard Node dependency. If `tcpser` is in PATH, the user
 ```sh
 chatgpt64 start --terminal c64 --port 6464
 chatgpt64 tcpser
+chatgpt64 vice
 ```
 
 The default helper command corresponds to:
@@ -59,6 +61,26 @@ https://github.com/go4retro/tcpser
 ```
 
 Windows can use WSL or a compatible `tcpser.exe` in PATH.
+
+## VICE
+
+`chatgpt64 vice` starts VICE with RS232/IP232 settings that point at `chatgpt64 tcpser`:
+
+```text
+VICE/CCGMS -> tcpser :25232 -> chatgpt64 :6464 -> OpenAI
+```
+
+Default command shape:
+
+```sh
+x64sc -default -rsdev2 127.0.0.1:25232 -rsdev2ip232 -rsuserbaud 2400 -rsuserdev 1 -userportdevice 2
+```
+
+Custom keyboard maps can be provided with:
+
+```sh
+chatgpt64 vice --keymap ~/Documents/sdl_sym_se.vkm
+```
 
 ## Homebrew
 
@@ -120,6 +142,7 @@ brew install chatgpt64
 chatgpt64 setup
 chatgpt64 start
 chatgpt64 tcpser
+chatgpt64 vice
 ```
 
 Homebrew's formula docs:
