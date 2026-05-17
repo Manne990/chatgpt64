@@ -44,13 +44,14 @@ Forsta kodpasset innehaller:
 - enkel telnet-IAC-filtrering
 - fjarr-echo for terminalprogram som vill ha BBS-kansla
 - prompt och radbuffer
-- `/help`, `/new`, `/short`, `/normal`, `/long`, `/c64`, `/ascii`, `/cls`, `/model`, `/quit`
+- `/help`, `/new`, `/short`, `/normal`, `/long`, `/c64`, `/ascii`, `/cls`, `/banner`, `/model`, `/quit`
 - OpenAI Responses API-anrop via `fetch`
 - `previous_response_id` per anslutning for fortsatt konversation
 - kort svarslage som standard
 - 40-kolumns radbrytning
 - ASCII-translitterering
 - valbart C64-farglage med PETSCII/control bytes
+- PETSCII-inspirerad uppkopplingsbanner med fargade reverse-video-block
 
 ## Krav
 
@@ -135,6 +136,7 @@ Deploy-anvandaren pa servern behover kunna kora `sudo install` och `sudo systemc
 /c64     C64-farglage
 /ascii   plain ASCII-lage
 /cls     rensa skarmen
+/banner  visa uppkopplingsbanner igen
 /model   visa aktiv modell
 /quit    koppla ner
 ```
@@ -142,6 +144,8 @@ Deploy-anvandaren pa servern behover kunna kora `sudo install` och `sudo systemc
 ## C64-farger
 
 ASCII-lage ar standard for maximal kompatibilitet. I C64-lage skickar servern Commodore control bytes for farg och clear screen, men haller vanlig text ASCII-saker eftersom den vagen redan fungerar bra med CCGMS/tcpser.
+
+Vid uppkoppling visar servern en liten PETSCII-inspirerad banner. Den anvander Commodores farger och reverse-video-spaces som blockgrafik. Det gor den robust i CCGMS utan att vi maste lita pa exakt samma grafikfont pa varje setup.
 
 Starta C64-farglage i en session:
 
@@ -159,6 +163,12 @@ Rensa skarmen:
 
 ```text
 /cls
+```
+
+Visa bannern igen:
+
+```text
+/banner
 ```
 
 For att starta alla anslutningar i C64-farglage, satt detta i serverns `.env`:

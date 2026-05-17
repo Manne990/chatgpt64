@@ -6,6 +6,7 @@ import {
   formatBlock,
   formatClearScreen,
   formatPrompt,
+  formatWelcomeBanner,
   normalizeTerminalMode,
 } from "../src/terminal.js";
 
@@ -29,6 +30,24 @@ test("formatBlock emits C64 color control bytes in C64 mode", () => {
   assert.equal(output[0], C64.LIGHT_GREEN);
   assert.equal(output.subarray(1, -1).toString("ascii"), "Hello C64\r\n");
   assert.equal(output.at(-1), C64.WHITE);
+});
+
+test("formatWelcomeBanner emits plain ASCII fallback", () => {
+  const output = formatWelcomeBanner({ terminal: "ascii", width: 40 });
+
+  assert.match(output, /CHATGPT\/64/);
+  assert.match(output, /OPENAI TERMINAL BRIDGE/);
+  assert.equal(output.includes(String.fromCharCode(C64.CLEAR)), false);
+});
+
+test("formatWelcomeBanner emits PETSCII-style graphics in C64 mode", () => {
+  const output = formatWelcomeBanner({ terminal: "c64", width: 40 });
+
+  assert.equal(Buffer.isBuffer(output), true);
+  assert.equal(output[0], C64.CLEAR);
+  assert.equal(output.includes(C64.REVERSE_ON), true);
+  assert.equal(output.includes(C64.REVERSE_OFF), true);
+  assert.equal(output.toString("latin1").includes("CHATGPT/64"), true);
 });
 
 test("formatPrompt colors the C64 prompt and resets input to white", () => {

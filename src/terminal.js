@@ -64,6 +64,35 @@ export function formatBlock(value, { asciiOnly = true, terminal = "ascii", width
   ]);
 }
 
+export function formatWelcomeBanner({ terminal = "ascii", width = 40 } = {}) {
+  const terminalMode = normalizeTerminalMode(terminal);
+  const safeWidth = Math.max(24, Math.min(80, width));
+
+  if (terminalMode !== "c64") {
+    const rule = "=".repeat(safeWidth);
+    return crlf([
+      rule,
+      centerLine("CHATGPT/64", safeWidth),
+      centerLine("OPENAI TERMINAL BRIDGE", safeWidth),
+      centerLine("SHORT MODE - /HELP", safeWidth),
+      rule,
+      "",
+    ].join("\n"));
+  }
+
+  return c64Bytes([
+    C64.CLEAR,
+    ...blockLine(C64.CYAN, safeWidth),
+    ...labelLine("CHATGPT/64", C64.CYAN, C64.WHITE, safeWidth),
+    ...labelLine("OPENAI TERMINAL BRIDGE", C64.LIGHT_BLUE, C64.WHITE, safeWidth),
+    ...stripeLine([C64.CYAN, C64.LIGHT_BLUE, C64.PURPLE, C64.YELLOW], safeWidth),
+    ...labelLine("SHORT MODE  /HELP", C64.PURPLE, C64.WHITE, safeWidth),
+    ...blockLine(C64.CYAN, safeWidth),
+    "\r\n",
+    C64.WHITE,
+  ]);
+}
+
 export function formatPrompt({ terminal = "ascii" } = {}) {
   if (!isC64Terminal(terminal)) {
     return "> ";
@@ -114,4 +143,52 @@ function c64Bytes(parts) {
   }
 
   return Buffer.from(bytes);
+}
+
+function blockLine(color, width) {
+  return [color, C64.REVERSE_ON, " ".repeat(width), C64.REVERSE_OFF, "\r\n"];
+}
+
+function labelLine(label, blockColor, textColor, width) {
+  const borderWidth = 2;
+  const content = centerLine(label, Math.max(1, width - borderWidth * 2));
+
+  return [
+    blockColor,
+    C64.REVERSE_ON,
+    " ".repeat(borderWidth),
+    C64.REVERSE_OFF,
+    textColor,
+    content,
+    blockColor,
+    C64.REVERSE_ON,
+    " ".repeat(borderWidth),
+    C64.REVERSE_OFF,
+    "\r\n",
+  ];
+}
+
+function stripeLine(colors, width) {
+  const parts = [];
+  const baseSize = Math.floor(width / colors.length);
+  let remaining = width;
+
+  colors.forEach((color, index) => {
+    const size = index === colors.length - 1 ? remaining : baseSize;
+    parts.push(color, C64.REVERSE_ON, " ".repeat(size), C64.REVERSE_OFF);
+    remaining -= size;
+  });
+
+  return [...parts, "\r\n"];
+}
+
+function centerLine(value, width) {
+  const text = String(value);
+  if (text.length >= width) {
+    return text.slice(0, width);
+  }
+
+  const left = Math.floor((width - text.length) / 2);
+  const right = width - text.length - left;
+  return `${" ".repeat(left)}${text}${" ".repeat(right)}`;
 }

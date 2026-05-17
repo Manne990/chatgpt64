@@ -69,6 +69,30 @@ test("TerminalSession can switch to C64 color mode", () => {
   assert.equal(socket.output.some((chunk) => Buffer.isBuffer(chunk)), true);
 });
 
+test("TerminalSession shows a C64 banner after switching to C64 mode", () => {
+  const socket = new FakeSocket();
+  const session = new TerminalSession({
+    socket,
+    chat: {},
+    config: {
+      apiKey: "test",
+      asciiOnly: true,
+      charDelayMs: 0,
+      echo: true,
+      maxInput: 1200,
+      model: "test-model",
+      terminal: "ascii",
+      width: 40,
+    },
+  });
+
+  session.receive(Buffer.from("/c64\r\n", "ascii"));
+
+  const banner = socket.output.find((chunk) => Buffer.isBuffer(chunk) && chunk[0] === C64.CLEAR);
+  assert.ok(banner);
+  assert.equal(banner.toString("latin1").includes("CHATGPT/64"), true);
+});
+
 test("TerminalSession treats PETSCII delete as backspace in C64 mode", () => {
   const socket = new FakeSocket();
   const session = new TerminalSession({

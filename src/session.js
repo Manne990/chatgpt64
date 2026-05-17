@@ -5,6 +5,7 @@ import {
   formatClearScreen,
   formatPrompt,
   formatReset,
+  formatWelcomeBanner,
   normalizeTerminalMode,
 } from "./terminal.js";
 
@@ -23,11 +24,10 @@ export class TerminalSession {
   }
 
   start() {
-    this.writeBlock([
-      "CHATGPT/64 READY.",
-      "SHORT MODE. /HELP FOR COMMANDS.",
-      "",
-    ].join("\n"), "banner");
+    this.writeRaw(formatWelcomeBanner({
+      terminal: this.terminal,
+      width: this.config.width,
+    }));
 
     if (!this.config.apiKey) {
       this.writeBlock("OBS: OPENAI_API_KEY SAKNAS PA SERVERN.", "error");
@@ -141,6 +141,7 @@ export class TerminalSession {
           "/C64    C64 COLOR MODE",
           "/ASCII  PLAIN ASCII MODE",
           "/CLS    CLEAR SCREEN",
+          "/BANNER SHOW START BANNER",
           "/MODEL  SHOW MODEL",
           "/QUIT   DISCONNECT",
         ].join("\n"), "help");
@@ -162,7 +163,10 @@ export class TerminalSession {
       case "/color":
       case "/petscii":
         this.terminal = "c64";
-        this.writeBlock("C64 COLOR MODE.", "system");
+        this.writeRaw(formatWelcomeBanner({
+          terminal: this.terminal,
+          width: this.config.width,
+        }));
         this.prompt();
         break;
       case "/ascii":
@@ -175,6 +179,13 @@ export class TerminalSession {
       case "/cls":
       case "/clear":
         this.writeRaw(formatClearScreen({ terminal: this.terminal }));
+        this.prompt();
+        break;
+      case "/banner":
+        this.writeRaw(formatWelcomeBanner({
+          terminal: this.terminal,
+          width: this.config.width,
+        }));
         this.prompt();
         break;
       case "/model":
