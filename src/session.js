@@ -30,7 +30,7 @@ export class TerminalSession {
     }));
 
     if (!this.config.apiKey) {
-      this.writeBlock("OBS: OPENAI_API_KEY SAKNAS PA SERVERN.", "error");
+      this.writeBlock("WARNING: OPENAI_API_KEY IS MISSING.", "error");
     }
 
     this.prompt();
@@ -113,7 +113,7 @@ export class TerminalSession {
     }
 
     if (this.busy) {
-      this.writeBlock("BUSY. VANTA PA SVARET.");
+      this.writeBlock("BUSY. WAIT FOR THE REPLY.");
       this.prompt();
       return;
     }

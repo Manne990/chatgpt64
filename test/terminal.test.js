@@ -19,7 +19,7 @@ test("normalizeTerminalMode accepts common C64 aliases", () => {
 
 test("formatBlock keeps ASCII mode plain", () => {
   assert.equal(
-    formatBlock("Hello färg", { asciiOnly: true, terminal: "ascii", width: 40 }),
+    formatBlock("Hello f\u00e4rg", { asciiOnly: true, terminal: "ascii", width: 40 }),
     "Hello farg\r\n",
   );
 });

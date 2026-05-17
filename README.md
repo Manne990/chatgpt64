@@ -1,138 +1,101 @@
 # chatgpt64
 
-En liten brygga som later en C64/C128 med CCGMS prata med ChatGPT via OpenAI API.
+`chatgpt64` is a local terminal bridge that lets retro computers talk to ChatGPT through the OpenAI API.
 
-Maskinen fran 80-talet behover bara agera terminal. Servern gor allt som ar modernt och tungt: TCP, TLS, HTTP, JSON, API-nyckel, sessionshantering och formatanpassning till 40 eller 80 kolumner.
+The retro machine only has to behave like a terminal. Your modern computer runs the bridge and handles TCP, TLS, HTTP, JSON, the OpenAI API key, session state, and 40/80-column formatting.
 
-## Grundide
-
-```text
-C64/C128 + CCGMS
-    -> WiFi-modem, tcpser, nullmodem eller serial-till-server
-    -> raw TCP/telnet-liknande socket
-    -> chatgpt64
-    -> OpenAI Responses API
-```
-
-Forsta malet ar en BBS-liknande prompt:
-
-```text
-CHATGPT/64 READY.
-> 
-```
-
-Du skriver en rad i CCGMS, servern skickar fragan till OpenAI och svaret kommer tillbaka radbrutet for terminalen.
-
-## Spec
-
-- C64/C128 ska ansluta med CCGMS via WiFi-modem, telnet-liknande TCP eller seriell brygga.
-- OpenAI API-nyckeln ska aldrig finnas pa C64:an, bara pa servern.
-- Servern ska prata med OpenAI Responses API.
-- Servern ska halla en enkel session per uppkoppling.
-- Svar ska vara korta, textbaserade och C64-vanliga eftersom terminalen inte har scrollback.
-- Utdata ska radbrytas for 40 kolumner som standard.
-- ASCII-safe lage ska vara standard, med enkel translitterering av svenska tecken.
-- C128/80-kolumnslage ska kunna anvanda bredare radbredd via miljovariabel.
-- Terminalkommandon ska finnas for ny session, hjalp, korta/langa svar och avslut.
-- Kodbasen ska vara liten nog att kunna koras pa en Raspberry Pi.
-
-## Status
-
-Forsta kodpasset innehaller:
-
-- raw TCP-server
-- enkel telnet-IAC-filtrering
-- fjarr-echo for terminalprogram som vill ha BBS-kansla
-- prompt och radbuffer
-- `/help`, `/new`, `/short`, `/normal`, `/long`, `/c64`, `/ascii`, `/cls`, `/banner`, `/model`, `/quit`
-- OpenAI Responses API-anrop via `fetch`
-- `previous_response_id` per anslutning for fortsatt konversation
-- kort svarslage som standard
-- 40-kolumns radbrytning
-- ASCII-translitterering
-- valbart C64-farglage med PETSCII/control bytes
-- PETSCII-inspirerad uppkopplingsbanner med fargade reverse-video-block
-- CLI-hjalpare for `tcpser` till VICE/CCGMS
-
-## Bridge-arkitektur
-
-`chatgpt64` ar nu en lokal bridge som kan anvandas av flera retroklienter:
+## Overview
 
 ```text
 C64/C128 + CCGMS
 VICE + tcpser
-Amiga Workbench-klient
-vanlig telnet/nc
-    -> chatgpt64 bridge
-    -> OpenAI API
+Amiga terminal clients
+plain telnet/nc clients
+    -> chatgpt64 bridge on your computer
+    -> OpenAI Responses API
 ```
 
-OpenAI API-nyckeln ska ligga pa datorn som kor bridgen, inte i C64- eller Amiga-klienten.
+The OpenAI API key stays on the computer running `chatgpt64`. It is never stored on the C64, C128, Amiga, or terminal client.
 
-## Krav
+## Features
 
-- Node.js 20 eller senare
-- En OpenAI API-nyckel
+- Raw TCP bridge for terminal-style clients
+- Lightweight telnet IAC filtering
+- Optional remote echo
+- Per-connection prompt and line buffer
+- `/help`, `/new`, `/short`, `/normal`, `/long`, `/c64`, `/ascii`, `/cls`, `/banner`, `/model`, `/quit`
+- OpenAI Responses API calls through `fetch`
+- `previous_response_id` per connection for continued conversations
+- Short-answer mode by default
+- 40-column wrapping by default
+- ASCII transliteration for safer retro terminal output
+- Optional C64 color mode using Commodore control bytes
+- PETSCII-inspired startup banner with colored reverse-video blocks
+- `tcpser` helper for VICE/CCGMS modem emulation
 
-OpenAI rekommenderar Responses API for nya projekt:
+## Requirements
 
-- https://developers.openai.com/api/docs/guides/migrate-to-responses
+- Node.js 20 or later
+- An OpenAI API key
+- Optional: `tcpser` for VICE/CCGMS modem emulation
 
-## Kom igang som lokal bridge
+## Quick Start
+
+From a local checkout:
 
 ```sh
-cd ~/Projects/chatgpt64
 npm install
 npm run setup
 npm start
 ```
 
-Servern lyssnar som standard pa port `6464`.
+The bridge listens on port `6464` by default.
 
 ```text
 CHATGPT64_HOST=0.0.0.0
 CHATGPT64_PORT=6464
 ```
 
-Fran ett WiFi-modem anslut till datorns IP och port `6464`. Exakt kommando beror pa modem-firmware, men ofta liknar det:
+From a WiFi modem, dial your computer's IP address and port:
 
 ```text
 ATDT192.168.1.50:6464
 ```
 
-For var VPS:
+## VICE + CCGMS
 
-```text
-ATDT152.42.141.215:6464
-```
-
-For VICE + CCGMS kor du bridgen i en terminal:
+Start the OpenAI bridge in one terminal:
 
 ```sh
 chatgpt64 start --terminal c64 --port 6464
 ```
 
-Och tcpser-hjalparen i en annan:
+Start the modem emulator in another terminal:
 
 ```sh
 chatgpt64 tcpser
 ```
 
-Da blir kedjan:
+The default chain is:
 
 ```text
 VICE/CCGMS -> tcpser :25232 -> chatgpt64 :6464 -> OpenAI
 ```
 
-I CCGMS ringer du:
+In CCGMS, dial:
 
 ```text
 ATDT6464
 ```
 
-## CLI
+If `tcpser` is missing, `chatgpt64 tcpser` prints platform-specific install guidance. On macOS with Homebrew:
 
-Efter global install eller `npm link` finns:
+```sh
+brew tap rickard-von-essen/formulae
+brew install tcpser
+```
+
+## CLI
 
 ```sh
 chatgpt64 setup
@@ -141,7 +104,7 @@ chatgpt64 tcpser
 chatgpt64 doctor
 ```
 
-`setup` skriver en lokal configfil:
+`setup` writes a local config file:
 
 ```text
 macOS:   ~/Library/Application Support/chatgpt64/.env
@@ -149,13 +112,13 @@ Linux:   ~/.config/chatgpt64/.env
 Windows: %APPDATA%\chatgpt64\.env
 ```
 
-Du kan ocksa peka ut en specifik fil:
+You can also point to a specific config file:
 
 ```sh
 chatgpt64 start --env ./my-chatgpt64.env
 ```
 
-Vanliga flaggor:
+Common flags:
 
 ```sh
 chatgpt64 start --terminal c64 --width 40 --port 6464
@@ -163,40 +126,17 @@ chatgpt64 start --terminal ascii --width 80 --port 6464
 chatgpt64 tcpser --listen 25232 --dial 6464 --target 127.0.0.1:6464
 ```
 
-`chatgpt64 start` ar sjalva OpenAI-bryggan. `chatgpt64 tcpser` startar modem-emuleringen for CCGMS/VICE och behovs bara nar klienten pratar AT-kommandon via en seriell modemvag.
+`chatgpt64 start` runs the OpenAI bridge. `chatgpt64 tcpser` starts modem emulation for clients that talk through AT commands.
 
-Om `tcpser` saknas skriver kommandot ut installationsrad. Pa macOS med Homebrew ar standardsparet:
+## Homebrew
 
-```sh
-brew tap rickard-von-essen/formulae
-brew install tcpser
+The formula template is in:
+
+```text
+packaging/homebrew/chatgpt64.rb
 ```
 
-## Installation
-
-Utvecklarinstall:
-
-```sh
-scripts/install-unix.sh
-```
-
-Windows PowerShell:
-
-```powershell
-scripts\install-windows.ps1
-```
-
-Homebrew-sparet finns som mall i `packaging/homebrew/chatgpt64.rb`. Tanken ar:
-
-```sh
-brew tap <owner>/chatgpt64
-brew install chatgpt64
-chatgpt64 setup
-chatgpt64 start
-chatgpt64 tcpser
-```
-
-For att bygga ett lokalt Homebrew-testpaket:
+For a local Homebrew test package:
 
 ```sh
 npm run pack:homebrew
@@ -206,129 +146,103 @@ HOMEBREW_NO_AUTO_UPDATE=1 brew install --build-from-source chatgpt64/local/chatg
 brew test chatgpt64/local/chatgpt64
 ```
 
-Om `chatgpt64` redan finns fran `npm link`, kor `npm unlink -g chatgpt64` forst eller installera med `--overwrite`.
+If `chatgpt64` already exists from `npm link`, run `npm unlink -g chatgpt64` first or install with `--overwrite`.
 
-Mer detaljer finns i `docs/packaging.md`.
+For a public tap:
 
-## CI/CD
-
-Repot har samma grundmonster som `swing-trader`:
-
-- `.github/workflows/ci.yml` kor `npm ci` och `npm test` pa pull requests och push till `main`.
-- `.github/workflows/deploy.yml` startar efter gron CI pa `main`, eller manuellt via `workflow_dispatch`.
-- Deploy sker via SSH och `rsync` till servern.
-- Systemd-tjansten installeras som `chatgpt64.service`.
-- Serverns `.env` bevaras vid deploy och lases av systemd.
-
-Skapa dessa GitHub secrets:
-
-```text
-CHATGPT64_APP_DIR
-CHATGPT64_SSH_HOST
-CHATGPT64_SSH_KEY
-CHATGPT64_SSH_USER
+```sh
+brew tap <owner>/chatgpt64
+brew install chatgpt64
+chatgpt64 setup
+chatgpt64 start
 ```
 
-Valfri secret om SSH inte gar pa port 22:
+More packaging notes are in `docs/packaging.md`.
+
+## Terminal Commands
 
 ```text
-CHATGPT64_SSH_PORT
+/help    show help
+/new     start a new ChatGPT session
+/short   short answers, default mode
+/normal  medium-length answers
+/long    allow longer answers
+/c64     C64 color mode
+/ascii   plain ASCII mode
+/cls     clear the screen
+/banner  show the startup banner again
+/model   show the active model
+/quit    disconnect
 ```
 
-Pa servern ska `CHATGPT64_APP_DIR/.env` innehalla minst:
+## C64 Color Mode
 
-```text
-OPENAI_API_KEY=sk-...
-```
+ASCII mode is the safest default. C64 mode sends Commodore color and clear-screen control bytes while keeping text plain enough for CCGMS/tcpser.
 
-Forsta deployen skapar en `.env` fran `.env.example` om filen saknas, men du maste fylla i riktig `OPENAI_API_KEY` pa servern innan ChatGPT-svar fungerar.
+The startup banner uses Commodore colors and reverse-video spaces as block graphics. This keeps it robust across CCGMS setups without requiring an exact graphics font match.
 
-Deploy-anvandaren pa servern behover kunna kora `sudo install` och `sudo systemctl` for att installera och starta om systemd-tjansten, pa samma satt som i `swing-trader`.
-
-## Terminalkommandon
-
-```text
-/help    visa hjalp
-/new     starta ny ChatGPT-session
-/short   korta svar, standardlage
-/normal  lite fylligare svar
-/long    tillat langre svar
-/c64     C64-farglage
-/ascii   plain ASCII-lage
-/cls     rensa skarmen
-/banner  visa uppkopplingsbanner igen
-/model   visa aktiv modell
-/quit    koppla ner
-```
-
-## C64-farger
-
-ASCII-lage ar standard for maximal kompatibilitet. I C64-lage skickar servern Commodore control bytes for farg och clear screen, men haller vanlig text ASCII-saker eftersom den vagen redan fungerar bra med CCGMS/tcpser.
-
-Vid uppkoppling visar servern en liten PETSCII-inspirerad banner. Den anvander Commodores farger och reverse-video-spaces som blockgrafik. Det gor den robust i CCGMS utan att vi maste lita pa exakt samma grafikfont pa varje setup.
-
-Starta C64-farglage i en session:
+Switch to C64 color mode during a session:
 
 ```text
 /c64
 ```
 
-Ga tillbaka till plain ASCII:
+Return to plain ASCII:
 
 ```text
 /ascii
 ```
 
-Rensa skarmen:
+Clear the screen:
 
 ```text
 /cls
 ```
 
-Visa bannern igen:
+Show the banner again:
 
 ```text
 /banner
 ```
 
-For att starta alla anslutningar i C64-farglage, satt detta i serverns `.env`:
+To start every connection in C64 color mode, set:
 
 ```text
 CHATGPT64_TERMINAL=c64
 ```
 
-Fargerna anvands sa har:
+Color use:
 
 ```text
-cyan       prompt/banner
-yellow     THINKING... och varningar
-light blue system- och hjalptext
-light red  fel
-light green ChatGPT-svar
-white      inmatning/reset
+cyan         prompt/banner
+yellow       THINKING... and warnings
+light blue   system/help text
+light red    errors
+light green  ChatGPT replies
+white        input/reset
 ```
 
-## Konfiguration
+## Configuration
 
 ```text
-OPENAI_API_KEY          kravs for riktiga svar
-OPENAI_MODEL            standard: gpt-5.5
-CHATGPT64_HOST          standard: 0.0.0.0
-CHATGPT64_PORT          standard: 6464
-CHATGPT64_WIDTH         standard: 40
-CHATGPT64_TERMINAL      standard: ascii, kan vara c64
-CHATGPT64_MAX_INPUT     standard: 1200
-CHATGPT64_ASCII_ONLY    standard: 1
-CHATGPT64_ECHO          standard: 1
-CHATGPT64_CHAR_DELAY_MS standard: 0
+OPENAI_API_KEY          required for real replies
+OPENAI_MODEL            default: gpt-5.5
+CHATGPT64_HOST          default: 0.0.0.0
+CHATGPT64_PORT          default: 6464
+CHATGPT64_WIDTH         default: 40
+CHATGPT64_TERMINAL      default: ascii, can be c64
+CHATGPT64_MAX_INPUT     default: 1200
+CHATGPT64_ASCII_ONLY    default: 1
+CHATGPT64_ECHO          default: 1
+CHATGPT64_CHAR_DELAY_MS default: 0
 ```
 
-`CHATGPT64_ASCII_ONLY=1` gor `a`, `a`, `o` av svenska specialtecken. Det ar fult men tryggt for forsta C64-testet. Sen kan vi bygga riktig PETSCII-konvertering.
+`CHATGPT64_ASCII_ONLY=1` transliterates accented source text to plain ASCII. It is less pretty, but safer for early retro terminal testing.
 
-## Nasta steg
+## Roadmap
 
-- PETSCII-lage med battre C64-teckenkarta.
-- Valfri personsokning: `-- MORE --`.
-- XMODEM-export av langa svar.
-- Seriell brygga direkt mot `/dev/tty.*`.
-- En liten BBS-meny runt chatten.
+- Better PETSCII character mapping
+- Optional paging with `-- MORE --`
+- XMODEM export for long replies
+- Direct serial bridge support for `/dev/tty.*`
+- A small BBS-style menu around the chat

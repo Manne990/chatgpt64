@@ -76,7 +76,7 @@ export function findExecutable(command, envPath = process.env.PATH || "", platfo
 export function installHint(platform = process.platform) {
   if (platform === "darwin") {
     return [
-      "tcpser saknas. Installera med Homebrew:",
+      "tcpser is missing. Install it with Homebrew:",
       "",
       "  brew tap rickard-von-essen/formulae",
       "  brew install tcpser",
@@ -85,23 +85,23 @@ export function installHint(platform = process.platform) {
 
   if (platform === "win32") {
     return [
-      "tcpser saknas.",
+      "tcpser is missing.",
       "",
-      "Windows-stodet varierar mellan builds. Kor tcpser via WSL, eller lagg en tcpser.exe i PATH",
-      "och peka eventuellt ut den med --tcpser-bin C:\\path\\to\\tcpser.exe.",
+      "Windows support varies between tcpser builds. Run tcpser through WSL, or put tcpser.exe in PATH",
+      "and optionally point to it with --tcpser-bin C:\\path\\to\\tcpser.exe.",
       "",
       "Upstream: https://github.com/go4retro/tcpser",
     ].join("\n");
   }
 
   return [
-    "tcpser saknas.",
+    "tcpser is missing.",
     "",
-    "Installera via din distribution om paket finns, eller bygg fran upstream:",
+    "Install it through your distribution if a package exists, or build it from upstream:",
     "",
     "  https://github.com/go4retro/tcpser",
     "",
-    "Arch har AUR-paket och Debian/Ubuntu-versioner kan ha paket beroende pa release.",
+    "Arch has AUR packages, and Debian/Ubuntu releases may have packages depending on the release.",
   ].join("\n");
 }
 

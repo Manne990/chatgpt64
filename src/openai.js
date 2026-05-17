@@ -8,7 +8,7 @@ export class OpenAIChat {
 
   async reply({ input, previousResponseId, mode = "short", signal }) {
     if (!this.apiKey) {
-      throw new Error("OPENAI_API_KEY saknas pa servern.");
+      throw new Error("OPENAI_API_KEY is missing.");
     }
 
     const body = {
@@ -35,7 +35,7 @@ export class OpenAIChat {
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      const message = data?.error?.message || `OpenAI API svarade ${response.status}`;
+      const message = data?.error?.message || `OpenAI API returned ${response.status}`;
       throw new Error(message);
     }
 
@@ -48,19 +48,19 @@ export class OpenAIChat {
 
 export function buildInstructions(mode) {
   const lengthHint = {
-    short: "Svara mycket kort: helst 3-6 rader, max 8 korta rader. Om mer behovs, fraga om anvandaren vill ha mer.",
-    normal: "Svara koncist: max 10-12 korta rader om inte anvandaren uttryckligen ber om mer.",
-    long: "Du far ge ett langre svar, men hall det fortfarande terminalvanligt.",
-  }[mode] || "Svara mycket kort: helst 3-6 rader, max 8 korta rader.";
+    short: "Keep replies very short: ideally 3-6 lines, max 8 short lines. If more is needed, ask whether the user wants more.",
+    normal: "Keep replies concise: max 10-12 short lines unless the user explicitly asks for more.",
+    long: "You may give a longer reply, but keep it terminal-friendly.",
+  }[mode] || "Keep replies very short: ideally 3-6 lines, max 8 short lines.";
 
   return [
-    "Du ar ChatGPT/64, en assistent som pratar med en C64 eller C128 via terminal.",
-    "Terminalen har ingen scrollback, sa langa svar forsvinner fran skarmen.",
-    "Svara pa svenska om anvandaren skriver svenska.",
-    "Anvand enkel plain text utan markdown-tabeller.",
-    "Undvik Unicode-symboler, emoji och typografiska citattecken.",
-    "Undvik utfyllnad, upprepning och langa introduktioner.",
-    "Hall rader och stycken terminalvanliga.",
+    "You are ChatGPT/64, an assistant talking to a C64, C128, Amiga, or plain terminal client.",
+    "The terminal may have no scrollback, so long replies can disappear from the screen.",
+    "Reply in the user's language.",
+    "Use simple plain text without markdown tables.",
+    "Avoid Unicode symbols, emoji, and typographic quotation marks.",
+    "Avoid filler, repetition, and long introductions.",
+    "Keep lines and paragraphs terminal-friendly.",
     lengthHint,
   ].join(" ");
 }
@@ -79,5 +79,5 @@ export function extractOutputText(data) {
     }
   }
 
-  return parts.join("\n").trim() || "(tomt svar)";
+  return parts.join("\n").trim() || "(empty response)";
 }

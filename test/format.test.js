@@ -14,8 +14,8 @@ test("wrapText splits words longer than the configured width", () => {
   assert.equal(wrapText("supercalifragilistic", 8), "supercal\r\nifragili\r\nstic");
 });
 
-test("toTerminalText transliterates common Swedish characters", () => {
-  assert.equal(toTerminalText("Räksmörgås – kul!", { asciiOnly: true }), "Raksmorgas - kul!");
+test("toTerminalText transliterates accented characters", () => {
+  assert.equal(toTerminalText("R\u00e4ksm\u00f6rg\u00e5s - test", { asciiOnly: true }), "Raksmorgas - test");
 });
 
 test("extractOutputText handles Responses API output items", () => {
@@ -38,6 +38,6 @@ test("extractOutputText handles Responses API output items", () => {
 
 test("buildInstructions defaults to C64-friendly short answers", () => {
   const instructions = buildInstructions();
-  assert.match(instructions, /ingen scrollback/);
-  assert.match(instructions, /max 8 korta rader/);
+  assert.match(instructions, /no scrollback/);
+  assert.match(instructions, /max 8 short lines/);
 });
