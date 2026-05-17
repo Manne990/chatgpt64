@@ -1,6 +1,6 @@
 {
   "name": "chatgpt64",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A local retro-computer terminal bridge to OpenAI for C64, C128, Amiga, and plain TCP clients.",
   "type": "module",
   "private": false,
