@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   C64,
+  formatBackspace,
   formatBlock,
   formatClearScreen,
   formatPrompt,
@@ -34,7 +35,11 @@ test("formatPrompt colors the C64 prompt and resets input to white", () => {
   assert.deepEqual([...formatPrompt({ terminal: "c64" })], [C64.CYAN, 62, 32, C64.WHITE]);
 });
 
+test("formatBackspace emits PETSCII delete in C64 mode", () => {
+  assert.equal(formatBackspace({ terminal: "ascii" }), "\b \b");
+  assert.deepEqual([...formatBackspace({ terminal: "c64" })], [C64.DELETE]);
+});
+
 test("formatClearScreen emits C64 clear-screen control byte", () => {
   assert.deepEqual([...formatClearScreen({ terminal: "c64" })], [C64.CLEAR, C64.WHITE]);
 });
-

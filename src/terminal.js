@@ -20,6 +20,7 @@ export const C64 = Object.freeze({
   REVERSE_ON: 0x12,
   REVERSE_OFF: 0x92,
   HOME: 0x13,
+  DELETE: 0x14,
   CLEAR: 0x93,
 });
 
@@ -71,6 +72,14 @@ export function formatPrompt({ terminal = "ascii" } = {}) {
   return c64Bytes([C64.CYAN, "> ", C64.WHITE]);
 }
 
+export function formatBackspace({ terminal = "ascii" } = {}) {
+  if (!isC64Terminal(terminal)) {
+    return "\b \b";
+  }
+
+  return c64Bytes([C64.DELETE]);
+}
+
 export function formatClearScreen({ terminal = "ascii" } = {}) {
   if (!isC64Terminal(terminal)) {
     return "\r\n".repeat(25);
@@ -106,4 +115,3 @@ function c64Bytes(parts) {
 
   return Buffer.from(bytes);
 }
-

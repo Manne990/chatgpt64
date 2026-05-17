@@ -1,12 +1,12 @@
 import {
+  C64,
+  formatBackspace,
   formatBlock,
   formatClearScreen,
   formatPrompt,
   formatReset,
   normalizeTerminalMode,
 } from "./terminal.js";
-
-const BACKSPACE = "\b \b";
 
 export class TerminalSession {
   constructor({ socket, chat, config }) {
@@ -55,7 +55,7 @@ export class TerminalSession {
 
       this.previousWasCr = false;
 
-      if (byte === 8 || byte === 127) {
+      if (byte === 8 || byte === 127 || byte === C64.DELETE) {
         this.backspace();
         continue;
       }
@@ -98,7 +98,7 @@ export class TerminalSession {
 
     this.line = this.line.slice(0, -1);
     if (this.config.echo) {
-      this.writeRaw(BACKSPACE);
+      this.writeRaw(formatBackspace({ terminal: this.terminal }));
     }
   }
 

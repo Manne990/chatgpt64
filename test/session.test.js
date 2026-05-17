@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { TerminalSession } from "../src/session.js";
+import { C64 } from "../src/terminal.js";
 
 test("TerminalSession treats CRLF as one submitted line", () => {
   const socket = new FakeSocket();
@@ -66,6 +67,29 @@ test("TerminalSession can switch to C64 color mode", () => {
 
   assert.equal(session.terminal, "c64");
   assert.equal(socket.output.some((chunk) => Buffer.isBuffer(chunk)), true);
+});
+
+test("TerminalSession treats PETSCII delete as backspace in C64 mode", () => {
+  const socket = new FakeSocket();
+  const session = new TerminalSession({
+    socket,
+    chat: {},
+    config: {
+      apiKey: "test",
+      asciiOnly: true,
+      charDelayMs: 0,
+      echo: true,
+      maxInput: 1200,
+      model: "test-model",
+      terminal: "c64",
+      width: 40,
+    },
+  });
+
+  session.receive(Buffer.from([65, 66, C64.DELETE]));
+
+  assert.equal(session.line, "A");
+  assert.deepEqual([...socket.output.at(-1)], [C64.DELETE]);
 });
 
 class FakeSocket {
