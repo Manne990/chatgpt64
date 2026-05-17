@@ -8,7 +8,7 @@ Maskinen fran 80-talet behover bara agera terminal. Servern gor allt som ar mode
 
 ```text
 C64/C128 + CCGMS
-    -> WiFi-modem, nullmodem eller serial-till-server
+    -> WiFi-modem, tcpser, nullmodem eller serial-till-server
     -> raw TCP/telnet-liknande socket
     -> chatgpt64
     -> OpenAI Responses API
@@ -52,6 +52,22 @@ Forsta kodpasset innehaller:
 - ASCII-translitterering
 - valbart C64-farglage med PETSCII/control bytes
 - PETSCII-inspirerad uppkopplingsbanner med fargade reverse-video-block
+- CLI-hjalpare for `tcpser` till VICE/CCGMS
+
+## Bridge-arkitektur
+
+`chatgpt64` ar nu en lokal bridge som kan anvandas av flera retroklienter:
+
+```text
+C64/C128 + CCGMS
+VICE + tcpser
+Amiga Workbench-klient
+vanlig telnet/nc
+    -> chatgpt64 bridge
+    -> OpenAI API
+```
+
+OpenAI API-nyckeln ska ligga pa datorn som kor bridgen, inte i C64- eller Amiga-klienten.
 
 ## Krav
 
@@ -62,12 +78,12 @@ OpenAI rekommenderar Responses API for nya projekt:
 
 - https://developers.openai.com/api/docs/guides/migrate-to-responses
 
-## Kom igang
+## Kom igang som lokal bridge
 
 ```sh
 cd ~/Projects/chatgpt64
-cp .env.example .env
-$EDITOR .env
+npm install
+npm run setup
 npm start
 ```
 
@@ -89,6 +105,110 @@ For var VPS:
 ```text
 ATDT152.42.141.215:6464
 ```
+
+For VICE + CCGMS kor du bridgen i en terminal:
+
+```sh
+chatgpt64 start --terminal c64 --port 6464
+```
+
+Och tcpser-hjalparen i en annan:
+
+```sh
+chatgpt64 tcpser
+```
+
+Da blir kedjan:
+
+```text
+VICE/CCGMS -> tcpser :25232 -> chatgpt64 :6464 -> OpenAI
+```
+
+I CCGMS ringer du:
+
+```text
+ATDT6464
+```
+
+## CLI
+
+Efter global install eller `npm link` finns:
+
+```sh
+chatgpt64 setup
+chatgpt64 start
+chatgpt64 tcpser
+chatgpt64 doctor
+```
+
+`setup` skriver en lokal configfil:
+
+```text
+macOS:   ~/Library/Application Support/chatgpt64/.env
+Linux:   ~/.config/chatgpt64/.env
+Windows: %APPDATA%\chatgpt64\.env
+```
+
+Du kan ocksa peka ut en specifik fil:
+
+```sh
+chatgpt64 start --env ./my-chatgpt64.env
+```
+
+Vanliga flaggor:
+
+```sh
+chatgpt64 start --terminal c64 --width 40 --port 6464
+chatgpt64 start --terminal ascii --width 80 --port 6464
+chatgpt64 tcpser --listen 25232 --dial 6464 --target 127.0.0.1:6464
+```
+
+`chatgpt64 start` ar sjalva OpenAI-bryggan. `chatgpt64 tcpser` startar modem-emuleringen for CCGMS/VICE och behovs bara nar klienten pratar AT-kommandon via en seriell modemvag.
+
+Om `tcpser` saknas skriver kommandot ut installationsrad. Pa macOS med Homebrew ar standardsparet:
+
+```sh
+brew tap rickard-von-essen/formulae
+brew install tcpser
+```
+
+## Installation
+
+Utvecklarinstall:
+
+```sh
+scripts/install-unix.sh
+```
+
+Windows PowerShell:
+
+```powershell
+scripts\install-windows.ps1
+```
+
+Homebrew-sparet finns som mall i `packaging/homebrew/chatgpt64.rb`. Tanken ar:
+
+```sh
+brew tap <owner>/chatgpt64
+brew install chatgpt64
+chatgpt64 setup
+chatgpt64 start
+chatgpt64 tcpser
+```
+
+For att bygga ett lokalt Homebrew-testpaket:
+
+```sh
+npm run pack:homebrew
+brew untap chatgpt64/local 2>/dev/null || true
+brew tap chatgpt64/local "file://$(pwd)/dist/homebrew/tap"
+HOMEBREW_NO_AUTO_UPDATE=1 brew install --build-from-source chatgpt64/local/chatgpt64
+brew test chatgpt64/local/chatgpt64
+```
+
+Om `chatgpt64` redan finns fran `npm link`, kor `npm unlink -g chatgpt64` forst eller installera med `--overwrite`.
+
+Mer detaljer finns i `docs/packaging.md`.
 
 ## CI/CD
 

@@ -1,16 +1,30 @@
 {
   "name": "chatgpt64",
   "version": "0.1.0",
-  "description": "A C64/C128 terminal bridge from CCGMS to ChatGPT through the OpenAI API.",
+  "description": "A local retro-computer terminal bridge to OpenAI for C64, C128, Amiga, and plain TCP clients.",
   "type": "module",
-  "private": true,
+  "private": false,
+  "bin": {
+    "chatgpt64": "bin/chatgpt64.js"
+  },
   "scripts": {
-    "start": "node src/server.js",
+    "start": "node bin/chatgpt64.js start",
+    "setup": "node bin/chatgpt64.js setup",
+    "doctor": "node bin/chatgpt64.js doctor",
     "dev": "node --watch src/server.js",
+    "pack:homebrew": "scripts/build-homebrew-test.sh",
     "test": "node --test"
   },
+  "files": [
+    "bin/",
+    "docs/",
+    "src/",
+    ".env.example",
+    "LICENSE",
+    "README.md"
+  ],
   "engines": {
     "node": ">=20"
-  }
+  },
+  "license": "MIT"
 }
-
