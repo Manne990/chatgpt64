@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { TerminalSession } from "../src/session.js";
-import { C64 } from "../src/terminal.js";
+import { C64, toC64TextBytes } from "../src/terminal.js";
 
 test("TerminalSession treats CRLF as one submitted line", () => {
   const socket = new FakeSocket();
@@ -90,7 +90,7 @@ test("TerminalSession shows a C64 banner after switching to C64 mode", () => {
 
   const banner = socket.output.find((chunk) => Buffer.isBuffer(chunk) && chunk[0] === C64.CLEAR);
   assert.ok(banner);
-  assert.equal(banner.toString("latin1").includes("CHATGPT/64"), true);
+  assert.equal(banner.includes(toC64TextBytes("CHATGPT/64")), true);
 });
 
 test("TerminalSession treats PETSCII delete as backspace in C64 mode", () => {

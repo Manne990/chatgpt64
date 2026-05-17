@@ -125,6 +125,25 @@ export function formatReset({ terminal = "ascii" } = {}) {
   return c64Bytes([C64.REVERSE_OFF, C64.WHITE]);
 }
 
+export function toC64TextBytes(value) {
+  const bytes = [];
+
+  for (const char of String(value)) {
+    const code = char.codePointAt(0);
+    if (code === 10 || code === 13) {
+      bytes.push(code);
+    } else if (code >= 65 && code <= 90) {
+      bytes.push(code + 128);
+    } else if (code >= 97 && code <= 122) {
+      bytes.push(code - 32);
+    } else if (code >= 32 && code <= 126) {
+      bytes.push(code);
+    }
+  }
+
+  return Buffer.from(bytes);
+}
+
 function c64Bytes(parts) {
   const bytes = [];
 
@@ -134,12 +153,7 @@ function c64Bytes(parts) {
       continue;
     }
 
-    for (const char of String(part)) {
-      const code = char.codePointAt(0);
-      if (code === 10 || code === 13 || (code >= 32 && code <= 126)) {
-        bytes.push(code);
-      }
-    }
+    bytes.push(...toC64TextBytes(part));
   }
 
   return Buffer.from(bytes);

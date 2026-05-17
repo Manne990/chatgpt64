@@ -8,6 +8,7 @@ import {
   formatPrompt,
   formatWelcomeBanner,
   normalizeTerminalMode,
+  toC64TextBytes,
 } from "../src/terminal.js";
 
 test("normalizeTerminalMode accepts common C64 aliases", () => {
@@ -28,8 +29,21 @@ test("formatBlock emits C64 color control bytes in C64 mode", () => {
 
   assert.equal(Buffer.isBuffer(output), true);
   assert.equal(output[0], C64.LIGHT_GREEN);
-  assert.equal(output.subarray(1, -1).toString("ascii"), "Hello C64\r\n");
+  assert.deepEqual([...output.subarray(1, -1)], [...toC64TextBytes("Hello C64\r\n")]);
   assert.equal(output.at(-1), C64.WHITE);
+});
+
+test("toC64TextBytes maps ASCII case to PETSCII display case", () => {
+  assert.deepEqual([...toC64TextBytes("Nice C64")], [
+    0xce,
+    0x49,
+    0x43,
+    0x45,
+    0x20,
+    0xc3,
+    0x36,
+    0x34,
+  ]);
 });
 
 test("formatWelcomeBanner emits plain ASCII fallback", () => {
@@ -47,7 +61,7 @@ test("formatWelcomeBanner emits PETSCII-style graphics in C64 mode", () => {
   assert.equal(output[0], C64.CLEAR);
   assert.equal(output.includes(C64.REVERSE_ON), true);
   assert.equal(output.includes(C64.REVERSE_OFF), true);
-  assert.equal(output.toString("latin1").includes("CHATGPT/64"), true);
+  assert.equal(output.includes(toC64TextBytes("CHATGPT/64")), true);
 });
 
 test("formatPrompt colors the C64 prompt and resets input to white", () => {
